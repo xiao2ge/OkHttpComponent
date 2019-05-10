@@ -137,8 +137,12 @@ public class HttpRequest {
                             @Override
                             public void onResponse(Call call, Response response) throws IOException {
                                 String result = response.body().string();
-                                emitter.onNext(result);
-                                emitter.onComplete();
+                                if (response.isSuccessful()) {
+                                    emitter.onNext(result);
+                                    emitter.onComplete();
+                                } else {
+                                    emitter.onError(new RuntimeException(result));
+                                }
                             }
                         });
                     }
@@ -181,7 +185,7 @@ public class HttpRequest {
                 });
     }
 
-    public void upload(final RequestListener listener) {
+    public void uploadAllFile(final RequestListener listener) {
         Observable
                 .create(new ObservableOnSubscribe<String>() {
                     @Override
@@ -207,13 +211,24 @@ public class HttpRequest {
                             builder.addHeader(key, headerMap.get(key));
                         }
                         final Request request = builder.build();
-                        Response response = mClient.newCall(request).execute();
-                        if (response.isSuccessful()) {
-                            emitter.onNext(response.body().toString());
-                            emitter.onComplete();
-                        } else {
-                            emitter.onError(new RuntimeException(response.body().toString()));
-                        }
+                        Call call = mClient.newCall(request);
+                        call.enqueue(new Callback() {
+                            @Override
+                            public void onFailure(Call call, IOException e) {
+                                emitter.onError(e);
+                            }
+
+                            @Override
+                            public void onResponse(Call call, Response response) throws IOException {
+                                String result = response.body().string();
+                                if (response.isSuccessful()) {
+                                    emitter.onNext(result);
+                                    emitter.onComplete();
+                                } else {
+                                    emitter.onError(new RuntimeException(result));
+                                }
+                            }
+                        });
                     }
                 })
                 .subscribeOn(Schedulers.io())
