@@ -3,8 +3,6 @@ package com.cekong.panran.okhttpcomponent.net;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.google.gson.Gson;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -27,12 +25,12 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * HttpRequest
+ * NetRequest
  *
  * @author LR
  * @date 2019/5/10 14:45
  */
-public class HttpRequest {
+public class NetRequest {
 
     private static final String TAG = "OKHTTP";
 
@@ -40,12 +38,10 @@ public class HttpRequest {
     private static final int REQUEST_METHOD_POST = 1;
 
     private OkHttpClient mClient;
-    private Gson mGson;
     private long id;
 
-    public HttpRequest(OkHttpClient mClient, Gson mGson, long id) {
+    public NetRequest(OkHttpClient mClient, long id) {
         this.mClient = mClient;
-        this.mGson = mGson;
         this.id = id;
     }
 
@@ -55,43 +51,43 @@ public class HttpRequest {
     private HashMap<String, String> headerMap = new HashMap<>();
     private HashMap<String, String> fileMap = new HashMap<>();
 
-    public HttpRequest get() {
+    public NetRequest get() {
         this.method = REQUEST_METHOD_GET;
         return this;
     }
 
-    public HttpRequest post() {
+    public NetRequest post() {
         this.method = REQUEST_METHOD_POST;
         return this;
     }
 
-    public HttpRequest url(String url) {
+    public NetRequest url(String url) {
         this.url = url;
         return this;
     }
 
-    public HttpRequest addParam(String key, String value) {
+    public NetRequest addParam(String key, String value) {
         if (!TextUtils.isEmpty(key)) {
             paramMap.put(key, value);
         }
         return this;
     }
 
-    public HttpRequest addHeader(String key, String value) {
+    public NetRequest addHeader(String key, String value) {
         if (!TextUtils.isEmpty(key)) {
             headerMap.put(key, value);
         }
         return this;
     }
 
-    public HttpRequest addFile(String key, String filePath) {
+    public NetRequest addFile(String key, String filePath) {
         if (!TextUtils.isEmpty(key)) {
             fileMap.put(key, filePath);
         }
         return this;
     }
 
-    public void enqueue(final RequestListener listener) {
+    public void enqueue(final NetListener listener) {
         Observable
                 .create(new ObservableOnSubscribe<String>() {
                     @Override
@@ -107,7 +103,7 @@ public class HttpRequest {
                             }
                             builder.post(bodyBuilder.build());
                             sb.append("||\t").append("POST\t").append(url).append("\n");
-                            sb.append("||\t").append("Params\t").append(mGson.toJson(paramMap)).append("\n");
+                            sb.append("||\t").append("Params\t").append(paramMap.toString()).append("\n");
                         } else {
                             if (paramMap.size() > 0) {
                                 url += "?";
@@ -123,9 +119,9 @@ public class HttpRequest {
                         for (String key : headerMap.keySet()) {
                             builder.addHeader(key, headerMap.get(key));
                         }
-                        sb.append("||\t").append("Headers\t").append(mGson.toJson(headerMap)).append("\n");
+                        sb.append("||\t").append("Headers\t").append(headerMap.toString()).append("\n");
                         sb.append("======================\t\t").append(id).append("\tRequest\tEnd\t\t").append("======================\n");
-                        Log.e(TAG, sb.toString());
+                        NetLog.i(TAG, sb.toString());
                         final Request request = builder.build();
                         Call call = mClient.newCall(request);
                         call.enqueue(new Callback() {
@@ -152,7 +148,7 @@ public class HttpRequest {
                 .subscribe(new Observer<String>() {
                     @Override
                     public void onSubscribe(Disposable d) {
-                        Log.e(TAG, " \n>>>>>>\tonSubscribe");
+                        NetLog.i(TAG, " \n>>>>>>\tonSubscribe");
                         if (listener != null) {
                             listener.onRequestStart();
                         }
@@ -160,7 +156,7 @@ public class HttpRequest {
 
                     @Override
                     public void onNext(String json) {
-                        Log.e(TAG, " \n>>>>>>\tResponse\t" + json);
+                        NetLog.i(TAG, " \n>>>>>>\tResponse\t" + json);
                         if (listener != null) {
                             listener.onResponse(json);
                         }
@@ -168,7 +164,7 @@ public class HttpRequest {
 
                     @Override
                     public void onError(Throwable e) {
-                        Log.e(TAG, " \n>>>>>>\tError\t" + e.getMessage(), e);
+                        NetLog.e(TAG, " \n>>>>>>\tError\t" + e.getMessage(), e);
                         if (listener != null) {
                             listener.onRequestEnd();
                             listener.onError(e.getMessage(), e);
@@ -185,7 +181,7 @@ public class HttpRequest {
                 });
     }
 
-    public void uploadAllFile(final RequestListener listener) {
+    public void uploadAllFile(final NetListener listener) {
         Observable
                 .create(new ObservableOnSubscribe<String>() {
                     @Override

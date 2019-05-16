@@ -6,8 +6,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import com.cekong.panran.okhttpcomponent.net.NetListener;
 import com.cekong.panran.okhttpcomponent.net.NetManager;
-import com.cekong.panran.okhttpcomponent.net.RequestListener;
 
 public class MainActivity extends Activity {
 
@@ -23,7 +23,7 @@ public class MainActivity extends Activity {
                         .url("http://www.panran.vip/wenbiao/contacts/search")
                         .addParam("keyword", "泰安")
                         .post()
-                        .enqueue(new RequestListener() {
+                        .enqueue(new NetListener() {
                             @Override
                             public void onRequestStart() {
                                 toast("onRequestStart");

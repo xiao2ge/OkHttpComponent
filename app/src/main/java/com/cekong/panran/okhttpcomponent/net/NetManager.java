@@ -1,7 +1,5 @@
 package com.cekong.panran.okhttpcomponent.net;
 
-import com.google.gson.Gson;
-
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -11,20 +9,20 @@ public class NetManager {
     private static NetManager mInstance;
 
     private OkHttpClient mHttpClient;
-    private Gson mGson;
     private long index;
+    protected static boolean DEBUG = false;
 
     private static int outTome = 30;
 
-    public static void init(int outTome) {
+    public static void init(int outTome, boolean debug) {
         NetManager.outTome = outTome;
+        DEBUG = debug;
     }
 
     private NetManager() {
         mHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(outTome, TimeUnit.SECONDS)
                 .build();
-        mGson = new Gson();
     }
 
     public static NetManager getInstance() {
@@ -34,9 +32,9 @@ public class NetManager {
         return mInstance;
     }
 
-    public HttpRequest newRequest() {
+    public NetRequest newRequest() {
         index++;
-        return new HttpRequest(mHttpClient, mGson, index);
+        return new NetRequest(mHttpClient, index);
     }
 
 }

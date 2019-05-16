@@ -1,12 +1,12 @@
 package com.cekong.panran.okhttpcomponent.net;
 
 /**
- * RequestListener
+ * NetListener
  *
  * @author LR
  * @date 2019/5/10 14:41
  */
-public interface RequestListener {
+public interface NetListener {
 
     void onRequestStart();
 
