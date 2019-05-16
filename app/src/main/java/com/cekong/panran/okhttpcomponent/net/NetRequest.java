@@ -1,7 +1,6 @@
 package com.cekong.panran.okhttpcomponent.net;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,8 +30,6 @@ import okhttp3.Response;
  * @date 2019/5/10 14:45
  */
 public class NetRequest {
-
-    private static final String TAG = "OKHTTP";
 
     private static final int REQUEST_METHOD_GET = 0;
     private static final int REQUEST_METHOD_POST = 1;
@@ -121,7 +118,7 @@ public class NetRequest {
                         }
                         sb.append("||\t").append("Headers\t").append(headerMap.toString()).append("\n");
                         sb.append("======================\t\t").append(id).append("\tRequest\tEnd\t\t").append("======================\n");
-                        NetLog.i(TAG, sb.toString());
+                        NetLog.i(sb.toString());
                         final Request request = builder.build();
                         Call call = mClient.newCall(request);
                         call.enqueue(new Callback() {
@@ -148,7 +145,7 @@ public class NetRequest {
                 .subscribe(new Observer<String>() {
                     @Override
                     public void onSubscribe(Disposable d) {
-                        NetLog.i(TAG, " \n>>>>>>\tonSubscribe");
+                        NetLog.i(" \n>>>>>>\tonSubscribe");
                         if (listener != null) {
                             listener.onRequestStart();
                         }
@@ -156,7 +153,7 @@ public class NetRequest {
 
                     @Override
                     public void onNext(String json) {
-                        NetLog.i(TAG, " \n>>>>>>\tResponse\t" + json);
+                        NetLog.i(" \n>>>>>>\tResponse\t" + json);
                         if (listener != null) {
                             listener.onResponse(json);
                         }
@@ -164,7 +161,7 @@ public class NetRequest {
 
                     @Override
                     public void onError(Throwable e) {
-                        NetLog.e(TAG, " \n>>>>>>\tError\t" + e.getMessage(), e);
+                        NetLog.e(" \n>>>>>>\tError\t" + e.getMessage(), e);
                         if (listener != null) {
                             listener.onRequestEnd();
                             listener.onError(e.getMessage(), e);
@@ -173,7 +170,7 @@ public class NetRequest {
 
                     @Override
                     public void onComplete() {
-                        Log.e(TAG, " \n>>>>>>\tComplete\t");
+                        NetLog.i(" \n>>>>>>\tComplete\t");
                         if (listener != null) {
                             listener.onRequestEnd();
                         }
@@ -232,7 +229,7 @@ public class NetRequest {
                 .subscribe(new Observer<String>() {
                     @Override
                     public void onSubscribe(Disposable d) {
-                        Log.e(TAG, " \n>>>>>>\tonSubscribe");
+                        NetLog.i(" \n>>>>>>\tonSubscribe");
                         if (listener != null) {
                             listener.onRequestStart();
                         }
@@ -240,7 +237,7 @@ public class NetRequest {
 
                     @Override
                     public void onNext(String json) {
-                        Log.e(TAG, " \n>>>>>>\tResponse\t" + json);
+                        NetLog.i(" \n>>>>>>\tResponse\t" + json);
                         if (listener != null) {
                             listener.onResponse(json);
                         }
@@ -248,7 +245,7 @@ public class NetRequest {
 
                     @Override
                     public void onError(Throwable e) {
-                        Log.e(TAG, " \n>>>>>>\tError\t" + e.getMessage(), e);
+                        NetLog.e(" \n>>>>>>\tError\t" + e.getMessage(), e);
                         if (listener != null) {
                             listener.onRequestEnd();
                             listener.onError(e.getMessage(), e);
@@ -257,7 +254,7 @@ public class NetRequest {
 
                     @Override
                     public void onComplete() {
-                        Log.e(TAG, " \n>>>>>>\tComplete\t");
+                        NetLog.i(" \n>>>>>>\tComplete\t");
                         if (listener != null) {
                             listener.onRequestEnd();
                         }
@@ -266,5 +263,109 @@ public class NetRequest {
 
     }
 
+    public void uploadFile(final NetProgressListener listener) {
+        Observable
+                .create(new ObservableOnSubscribe<String>() {
+                    @Override
+                    public void subscribe(final ObservableEmitter<String> emitter) throws Exception {
 
+                        Request.Builder requestBuilder = new Request.Builder();
+
+                        MultipartBody.Builder builder = new MultipartBody.Builder()
+                                .setType(MultipartBody.FORM);
+
+                        for (String key : paramMap.keySet()) {
+                            builder.addFormDataPart(key, paramMap.get(key));
+                        }
+
+                        String name = "";
+                        String filePath = "";
+                        for (String key : fileMap.keySet()) {
+                            name = key;
+                            filePath = fileMap.get(key);
+                            break;
+                        }
+                        File file = new File(filePath);
+                        if (TextUtils.isEmpty(name)) {
+                            emitter.onError(new RuntimeException("文件参数名不能为空"));
+                        } else if (!file.exists()) {
+                            emitter.onError(new RuntimeException("文件不存在"));
+                        } else {
+                            builder.addFormDataPart(name, file.getName(), RequestBody.create(MediaType.parse(FileUtils.getMimeType(file)), file));
+                            FileProgressRequestBody body = new FileProgressRequestBody(builder.build(), null);
+
+                            for (String key : headerMap.keySet()) {
+                                requestBuilder.addHeader(key, headerMap.get(key));
+                            }
+
+                            Request request = requestBuilder.url(url)
+                                    .post(body)
+                                    .build();
+
+                            StringBuilder sb = new StringBuilder();
+                            sb.append(" \n======================\t\t").append(id).append("\tRequest\tStart\t\t").append("======================\n");
+                            sb.append("||\t").append("POST\t").append(url).append("\n");
+                            sb.append("||\t").append("Params\t").append(paramMap.toString()).append("\n");
+                            sb.append("||\t").append("File\t").append(name).append("\n").append(filePath).append("\n");
+                            sb.append("||\t").append("Headers\t").append(headerMap.toString()).append("\n");
+                            sb.append("======================\t\t").append(id).append("\tRequest\tEnd\t\t").append("======================\n");
+                            NetLog.i(sb.toString());
+                            Call call = mClient.newCall(request);
+                            call.enqueue(new Callback() {
+                                @Override
+                                public void onFailure(Call call, IOException e) {
+                                    emitter.onError(e);
+                                }
+
+                                @Override
+                                public void onResponse(Call call, Response response) throws IOException {
+                                    String result = response.body().string();
+                                    if (response.isSuccessful()) {
+                                        emitter.onNext(result);
+                                        emitter.onComplete();
+                                    } else {
+                                        emitter.onError(new RuntimeException(result));
+                                    }
+                                }
+                            });
+                        }
+                    }
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        NetLog.i(" \n>>>>>>\tonSubscribe");
+                        if (listener != null) {
+                            listener.onRequestStart();
+                        }
+                    }
+
+                    @Override
+                    public void onNext(String json) {
+                        NetLog.i(" \n>>>>>>\tResponse\t" + json);
+                        if (listener != null) {
+                            listener.onResponse(json);
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        NetLog.e(" \n>>>>>>\tError\t" + e.getMessage(), e);
+                        if (listener != null) {
+                            listener.onRequestEnd();
+                            listener.onError(e.getMessage(), e);
+                        }
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        NetLog.i(" \n>>>>>>\tComplete\t");
+                        if (listener != null) {
+                            listener.onRequestEnd();
+                        }
+                    }
+                });
+    }
 }

@@ -1,14 +1,14 @@
 package com.cekong.panran.okhttpcomponent.net;
 
-import java.io.File;
 import java.io.IOException;
 
 import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
-import okhttp3.internal.Util;
+import okio.Buffer;
 import okio.BufferedSink;
+import okio.ForwardingSink;
 import okio.Okio;
-import okio.Source;
 
 /**
  * FileProgressRequestBody
@@ -18,53 +18,52 @@ import okio.Source;
  */
 public class FileProgressRequestBody extends RequestBody {
 
-    public interface ProgressListener {
-        void transferred(long size);
-    }
-
     public static final int SEGMENT_SIZE = 2 * 1024; // okio.Segment.SIZE
 
-    protected File file;
-    protected ProgressListener listener;
-    protected String contentType;
+    private MultipartBody multipartBody;
+    private NetProgressListener listener;
+    private long currentLength;
 
-    public FileProgressRequestBody(File file, String contentType, ProgressListener listener) {
-        this.file = file;
-        this.contentType = contentType;
+    public FileProgressRequestBody(MultipartBody multipartBody, NetProgressListener listener) {
+        this.multipartBody = multipartBody;
         this.listener = listener;
     }
 
-    protected FileProgressRequestBody() {
-    }
-
     @Override
-    public long contentLength() {
-        return file.length();
+    public long contentLength() throws IOException {
+        return multipartBody.contentLength();
     }
 
     @Override
     public MediaType contentType() {
-        return MediaType.parse(contentType);
+        return multipartBody.contentType();
     }
 
     @Override
     public void writeTo(BufferedSink sink) throws IOException {
-        Source source = null;
-        try {
-            source = Okio.source(file);
-            long total = 0;
-            long read;
+        //这里需要另一个代理类来获取写入的长度
+        ForwardingSink forwardingSink = new ForwardingSink(sink) {
+            final long totalLength = contentLength();
 
-            while ((read = source.read(sink.buffer(), SEGMENT_SIZE)) != -1) {
-                total += read;
-                sink.flush();
+            @Override
+            public void write(Buffer source, long byteCount) throws IOException {
+                //这里可以获取到写入的长度
+                currentLength += byteCount;
+                //回调进度
                 if (listener != null) {
-                    listener.transferred(total);
+                    listener.onProgress(currentLength, totalLength);
                 }
+                NetLog.i(" \n>>>>>>\tonProgress\tcurrentLength=" + currentLength + "\ttotalLength" + totalLength);
+                super.write(source, byteCount);
             }
-        } finally {
-            Util.closeQuietly(source);
-        }
+        };
+
+        //转一下
+        BufferedSink bufferedSink = Okio.buffer(forwardingSink);
+        //写数据
+        multipartBody.writeTo(bufferedSink);
+        //刷新一下数据
+        bufferedSink.flush();
     }
 
 

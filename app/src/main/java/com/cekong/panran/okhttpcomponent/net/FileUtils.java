@@ -11,7 +11,7 @@ import java.util.Locale;
  * @author LR
  * @date 2019/5/10 15:21
  */
-public class FileUtils {
+class FileUtils {
     private static String getSuffix(File file) {
         if (file == null || !file.exists() || file.isDirectory()) {
             return null;

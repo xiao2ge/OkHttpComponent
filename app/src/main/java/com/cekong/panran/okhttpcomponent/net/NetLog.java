@@ -10,15 +10,17 @@ import android.util.Log;
  */
 class NetLog {
 
-    static void i(String tag, String msg) {
+    private static final String TAG = "OKHTTP";
+
+    static void i(String msg) {
         if (NetManager.DEBUG) {
-            Log.i(tag, msg);
+            Log.i(TAG, msg);
         }
     }
 
-    static void e(String tag, String msg, Throwable e) {
+    static void e(String msg, Throwable e) {
         if (NetManager.DEBUG) {
-            Log.e(tag, msg, e);
+            Log.e(TAG, msg, e);
         }
     }
 }
